@@ -115,15 +115,18 @@ clear_cache() {
     echo "Clearing Pterodactyl cache (Manual Mode)..."
     cd "$PANEL_PATH" || exit
     
-    # Manually remove cache files to prevent hangs
-    rm -f storage/framework/views/*.php
-    rm -f storage/framework/cache/data/*
+    # Properly remove cache files and directories
+    rm -rf storage/framework/views/*.php
+    rm -rf storage/framework/cache/data/*
     rm -f bootstrap/cache/config.php
     rm -f bootstrap/cache/services.php
     rm -f bootstrap/cache/packages.php
     rm -f bootstrap/cache/routes-v7.php
     
-    echo "✅ Cache wiped manually."
+    # Cleanup the installer files
+    rm -f Hyperv1.tar
+    
+    echo "✅ Cache wiped and installer cleaned up."
 }
 
 # Add bypass logic here if needed
