@@ -10,7 +10,7 @@ set -e
 # --- Configuration ---
 # Change these if you want to point to a different repository
 GH_USER="kiruthik123"
-GH_REPO="cracked"
+GH_REPO="cracked-"
 BRANCH="main"
 # ---------------------
 
