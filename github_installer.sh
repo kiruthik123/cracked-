@@ -64,51 +64,38 @@ install_hyperv1_files() {
     echo "Downloading HyperV1 files from GitHub..."
     cd "$PANEL_PATH" || exit
 
-    if [[ "$USE_LOCAL_FILES" == "1" ]]; then
-        if [[ -f "${SCRIPT_DIR}/Hyperv1.tar" ]]; then
-            echo "[--local] Using local Hyperv1.tar from ${SCRIPT_DIR}."
-            cp "${SCRIPT_DIR}/Hyperv1.tar" "Hyperv1.tar"
-        else
-            echo "Error: --local specified but Hyperv1.tar not found."
-            exit 1
-        fi
+    DOWNLOAD_URL="https://github.com/${GH_USER}/${GH_REPO}/releases/download/v1.0.0/Hyperv1.tar"
+    
+    echo "Fetching from: $DOWNLOAD_URL"
+    if curl -f -L -o "Hyperv1.tar" "$DOWNLOAD_URL"; then
+        echo "Successfully downloaded Hyperv1.tar"
     else
-        # You can either download a tarball you uploaded to GitHub OR 
-        # download the whole repository as a zip and extract it.
-        # Option A: Download from GitHub Release (Supports large files >25MB)
-        DOWNLOAD_URL="https://github.com/${GH_USER}/${GH_REPO}/releases/download/v1.0.0/Hyperv1.tar"
-        
-        echo "Fetching from: $DOWNLOAD_URL"
+        echo "Failed to download from Release. Trying raw file fallback..."
+        DOWNLOAD_URL="https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/${BRANCH}/Hyperv1.tar"
         if curl -f -L -o "Hyperv1.tar" "$DOWNLOAD_URL"; then
-            echo "Successfully downloaded Hyperv1.tar"
+            echo "Successfully downloaded Hyperv1.tar (Raw)"
         else
-            echo "Failed to download from Release. Trying raw file fallback..."
-            DOWNLOAD_URL="https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/${BRANCH}/Hyperv1.tar"
-            if curl -f -L -o "Hyperv1.tar" "$DOWNLOAD_URL"; then
-                echo "Successfully downloaded Hyperv1.tar (Raw)"
-            else
-                echo "Failed to download Hyperv1.tar. Trying to download repo zip instead..."
-            # Option B: Fallback to Repo Zip if Tarball is missing
-            DOWNLOAD_URL="https://github.com/${GH_USER}/${GH_REPO}/archive/refs/heads/${BRANCH}.zip"
-            curl -f -L -o "repo.zip" "$DOWNLOAD_URL"
-            apt-get install -y unzip >/dev/null || yum install -y unzip >/dev/null
-            unzip -o "repo.zip"
-            cp -r "${GH_REPO}-${BRANCH}/"* .
-            rm -rf "repo.zip" "${GH_REPO}-${BRANCH}"
-            return 0
-            fi
+            echo "Error: Could not download the theme file."
+            exit 1
         fi
     fi
 
-    echo "Extracting files..."
-    tar -xf "Hyperv1.tar" --overwrite
+    echo "Extracting files (this might take a second)..."
+    tar -xvf "Hyperv1.tar" || { echo "❌ Extraction failed!"; exit 1; }
     rm -f "Hyperv1.tar"
+    echo "✅ Extraction complete."
 }
 
 set_permissions() {
     echo "Setting permissions..."
-    chown -R www-data:www-data "$PANEL_PATH"/* || chown -R apache:apache "$PANEL_PATH"/*
+    # Detect the web server user
+    WEBUSER="www-data"
+    if id "nginx" &>/dev/null; then WEBUSER="nginx"; fi
+    if id "apache" &>/dev/null; then WEBUSER="apache"; fi
+    
+    chown -R $WEBUSER:$WEBUSER "$PANEL_PATH"/*
     chmod -R 755 "$PANEL_PATH"/storage/* "$PANEL_PATH"/bootstrap/cache/
+    echo "✅ Permissions set to $WEBUSER."
 }
 
 clear_cache() {
@@ -189,8 +176,23 @@ case $OPTION in
     apply_cracks
     clear_cache
     set_permissions
-    echo "---- Installation Completed ----"
-    echo "If you have the Discord Bot or FastDL enabled, remember to restart them."
+    
+    echo ""
+    echo "=================================================="
+    echo "         Installation Finished Successfully!"
+    echo "=================================================="
+    echo "1. Restart your web server (e.g., systemctl restart nginx)"
+    echo "2. Restart PHP-FPM (e.g., systemctl restart php8.1-fpm)"
+    echo "3. Clear your browser cache (CTRL + F5)"
+    echo ""
+    echo "Verify Hyper is active:"
+    if grep -q "HyperV1" "$PANEL_PATH/resources/views/templates/wrapper.blade.php"; then
+        echo "✅ Verification Passed: HyperV1 files detected."
+    else
+        echo "❌ Verification Failed: HyperV1 files NOT detected in panel root."
+        echo "   Please check if your tarball has the correct folder structure."
+    fi
+    echo "=================================================="
     ;;
 2)
     echo "Please find your backup in /var/www/ and extract it manually."
