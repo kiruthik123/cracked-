@@ -133,9 +133,48 @@ apply_cracks() {
     fi
 }
 
+check_ioncube() {
+    if php -m | grep -qi "ionCube"; then
+        echo "✅ ionCube Loader is already installed."
+    else
+        echo "❌ ionCube Loader is missing! This theme requires it."
+        read -rp "Would you like to automatically install ionCube? (y/n): " INSTALL_ION
+        if [[ "$INSTALL_ION" =~ ^[Yy]$ ]]; then
+            echo "Installing ionCube Loader..."
+            PHP_VER=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
+            EXT_DIR=$(php -r 'echo ini_get("extension_dir");')
+            
+            mkdir -p /tmp/ioncube && cd /tmp/ioncube
+            curl -sL https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz -o ioncube.tar.gz
+            tar -xzf ioncube.tar.gz
+            
+            cp "ioncube/ioncube_loader_lin_${PHP_VER}.so" "$EXT_DIR/"
+            
+            INI_FILE=$(php -i | grep "Loaded Configuration File" | awk '{print $NF}')
+            if ! grep -q "ioncube_loader" "$INI_FILE"; then
+                echo "zend_extension=ioncube_loader_lin_${PHP_VER}.so" | sudo tee -a "$INI_FILE" > /dev/null
+            fi
+            
+            # Also add to fpm if it exists
+            FPM_INI="/etc/php/${PHP_VER}/fpm/php.ini"
+            if [[ -f "$FPM_INI" ]]; then
+                if ! grep -q "ioncube_loader" "$FPM_INI"; then
+                    echo "zend_extension=ioncube_loader_lin_${PHP_VER}.so" | sudo tee -a "$FPM_INI" > /dev/null
+                fi
+                systemctl restart "php${PHP_VER}-fpm" || true
+            fi
+            
+            echo "✅ ionCube installed! Please restart your webserver (nginx/apache)."
+        else
+            echo "Skipping ionCube installation. The theme may not work!"
+        fi
+    fi
+}
+
 case $OPTION in
 1)
     echo "--- Starting Installation ---"
+    check_ioncube
     backup_panel
     install_hyperv1_files
     apply_cracks
