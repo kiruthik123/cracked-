@@ -96,6 +96,7 @@ install_hyperv1_files() {
             cp -r "${GH_REPO}-${BRANCH}/"* .
             rm -rf "repo.zip" "${GH_REPO}-${BRANCH}"
             return 0
+            fi
         fi
     fi
 
