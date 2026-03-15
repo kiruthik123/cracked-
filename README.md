@@ -13,7 +13,7 @@ This repository contains the cracked version of the HyperV1 theme for Pterodacty
 To install this theme on your Pterodactyl Panel, run the following command as root:
 
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/kiruthik123/cracked/main/github_installer.sh)
+bash <(curl -sL https://raw.githubusercontent.com/kiruthik123/cracked-/main/github_installer.sh)
 ```
 
 **Note:** Replace `YOUR_USERNAME` and `YOUR_REPO` in the command above with your GitHub details once you have uploaded the files.
